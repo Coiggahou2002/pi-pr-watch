@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.0
+
+- Replace mention-based discovery with successful gh PR operations, explicit CI watching, and attributable git pushes. Old incidental links are intentionally not imported.
+- Resolve implicit identities before branch-changing operations and validate push head repository/branch identity without choosing ambiguous matches.
+- Add conservative static shell analysis with per-subcommand flag arity; unsupported commands are left unchanged and not guessed.
+- Add `/prs watch` and `/prs unwatch`, persisted as branch-aware session activity events.
+- Observe user `!` completion through stable session entries, without replacing the shell backend; exclude private `!!` commands.
+- Fence stale/overlapping command lookups and keep icon preferences, hyperlinks, status polling, and error details.
+
 ## 0.2.1
 
 - Prioritize previously verified PRs over pending links in the widget.

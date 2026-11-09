@@ -1,7 +1,7 @@
 {
   "name": "@coiggahou2002/pi-pr-watch",
-  "version": "0.2.1",
-  "description": "Track GitHub PR links from the active Pi conversation in a read-only terminal widget.",
+  "version": "0.3.0",
+  "description": "Track PRs actively maintained by a Pi session using gh/git activity evidence, not incidental links.",
   "type": "module",
   "license": "MIT",
   "repository": {
@@ -45,5 +45,8 @@
     "prettier": "^3.0.0",
     "tsx": "^4.0.0",
     "typescript": "^5.9.0"
+  },
+  "dependencies": {
+    "shell-quote": "^1.12.0"
   }
 }

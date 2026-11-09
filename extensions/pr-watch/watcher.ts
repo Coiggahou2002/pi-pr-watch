@@ -44,6 +44,10 @@ export class PrWatcher {
     return added;
   }
 
+  remove(key: string): void {
+    if (this.rows.delete(key)) this.changed();
+  }
+
   startPolling(intervalMs = REFRESH_INTERVAL_MS): void {
     if (this.timer || this.controller.signal.aborted) return;
     this.timer = setInterval(() => {
