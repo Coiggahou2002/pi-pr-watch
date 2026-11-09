@@ -40,7 +40,13 @@ export function renderPrs(
   iconMode: IconMode = "auto",
 ): string[] {
   if (width <= 0) return [];
-  const lines = rows.slice(0, MAX_WIDGET_ROWS).map((row) => {
+  // A link in quoted source/test output is only a candidate, not a verified PR.
+  // Keep failed first lookups inspectable without letting them bury real PRs.
+  const verified = rows.filter((row) => row.status !== undefined);
+  const pending = rows.filter((row) => row.status === undefined && !row.error);
+  const unverifiedCount = rows.length - verified.length - pending.length;
+  const displayRows = [...verified, ...pending];
+  const lines = displayRows.slice(0, MAX_WIDGET_ROWS).map((row) => {
     const state = visualState(row);
     const glyph = `${iconGlyph(state, iconMode)} `;
     const icon = theme.style(glyph, {
@@ -60,13 +66,14 @@ export function renderPrs(
       "…",
     );
   });
-  if (rows.length > MAX_WIDGET_ROWS)
+  const notices: string[] = [];
+  if (displayRows.length > MAX_WIDGET_ROWS)
+    notices.push(`另有 ${displayRows.length - MAX_WIDGET_ROWS} 个 PR`);
+  if (unverifiedCount) notices.push(`${unverifiedCount} 个链接未验证`);
+  if (notices.length)
     lines.push(
       truncateToWidth(
-        theme.fg(
-          "dim",
-          `另有 ${rows.length - MAX_WIDGET_ROWS} 个 PR · /prs 查看全部`,
-        ),
+        theme.fg("dim", `${notices.join(" · ")} · /prs 查看详情`),
         width,
         "…",
       ),

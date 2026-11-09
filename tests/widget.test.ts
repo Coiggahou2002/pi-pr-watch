@@ -115,6 +115,34 @@ test("icon and truncated label link to the canonical PR URL, without leaking int
   }
 });
 
+test("unverified links collapse into a count and never crowd verified PRs out", () => {
+  const badPr = extractPullRequests("https://github.com/o/first/pull/1")[0];
+  assert.ok(badPr);
+  const unverified = Array.from({ length: 6 }, () => ({
+    pr: badPr,
+    error: "not found or no access",
+  }));
+  const lines = renderPrs([...unverified, row], 120, theme);
+  assert.equal(lines.length, 2);
+  assert.match(stripTerminalSequences(lines[0] ?? ""), /owner\/repository#1/);
+  assert.match(lines[1] ?? "", /6 个链接未验证/);
+  assert.doesNotMatch(lines.join(""), /o\/first|查询失败|不存在/);
+  assert.match(detailsText(unverified), /o\/first#1.*查询失败/);
+  const onlyFailures = renderPrs(unverified, 120, theme);
+  assert.equal(onlyFailures.length, 1);
+  assert.match(onlyFailures[0] ?? "", /6 个链接未验证.*\/prs/);
+  const stale = renderPrs(
+    [{ ...row, error: "network failure" }, ...unverified],
+    120,
+    theme,
+  );
+  assert.match(stale[0] ?? "", /旧状态/);
+  for (const width of [1, 20, 40]) {
+    for (const line of renderPrs([...unverified, row], width, theme))
+      assert.ok(visibleWidth(line) <= width);
+  }
+});
+
 test("failure is not closed; cached green status is clearly stale", () => {
   assert.equal(statusText({ pr, error: "403" }), "查询失败");
   assert.match(statusText({ ...row, error: "403" }), /旧状态/);

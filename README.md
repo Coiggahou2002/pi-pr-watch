@@ -36,7 +36,7 @@ pi -e git:github.com/Coiggahou2002/pi-pr-watch
 - A newly discovered PR is queried immediately, independently of the agent. Existing PRs refresh every **60 seconds** while the session remains open.
 - Shows open/draft/merged/closed state, combined CI state, and GitHub's aggregate review decision. An empty review decision is **审核未知**, not an invented approval or required review.
 - Queries at most three PRs concurrently, with a 15-second subprocess timeout and bounded output.
-- Keeps the **20 most recently discovered distinct PRs**. Shows the newest three in the widget, plus an overflow count; `/prs` shows all tracked PRs and full URLs.
+- Keeps the **20 most recently discovered distinct PRs**. Shows up to three rows in the widget, prioritizing PRs with a previously successful lookup over pending candidates. Failed first lookups collapse into a single “N 个链接未验证” notice instead of taking PR slots. Overflow counts share that notice row; `/prs` shows all tracked links and full URLs.
 - With no links, shows no widget and makes no GitHub calls. There are no background queries outside TUI mode.
 - Cancels the old watcher on reload, session shutdown/replacement, or `/tree`. Late results cannot update another session/branch, even if cancellation is ignored.
 
@@ -83,7 +83,7 @@ Visibility resets to shown on a new/resumed/reloaded session. Tracking is recons
 
 ## Failure handling
 
-Missing `gh`, missing authentication, insufficient repository/check permissions, rate limits, malformed responses, timeouts, and network failures are shown as **查询失败**, never “closed” or “no CI”. Use `/prs` for details. If a refresh fails after a success, the previous status stays visible with **更新失败（旧状态）** until a refresh succeeds.
+Missing `gh`, missing authentication, insufficient repository/check permissions, rate limits, malformed responses, timeouts, and network failures are shown as **查询失败** in `/prs`, never “closed” or “no CI”. Links that have never been successfully queried are folded into a compact **N 个链接未验证** notice in the widget, so examples in test/source output do not crowd out real PRs. They are still retried normally: a failed lookup can mean a private repository without access, not necessarily a nonexistent PR. Use `/prs` for full details. If a refresh fails after a success, the previous status stays visible with **更新失败（旧状态）** until a refresh succeeds.
 
 “No CI” means no effective reported checks (neutral/skipped checks do not count as failures). Unknown or unsupported check states are reported as unknown rather than green. A CI failure is not a claim about mergeability. The review field is GitHub's aggregate decision, not a count of unresolved threads or a list of reviewers.
 

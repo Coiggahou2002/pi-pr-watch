@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.1
+
+- Prioritize previously verified PRs over pending links in the widget.
+- Fold failed first lookups into one unverified-link notice, instead of letting test examples and inaccessible repositories crowd out real PRs.
+- Preserve full error details in `/prs`, retries, and explicit stale markers for previously successful queries.
+
 ## 0.2.0
 
 - Add distinct Open, Merged, Closed, and Draft icons, with green/purple/red/gray colors in light and dark themes.
