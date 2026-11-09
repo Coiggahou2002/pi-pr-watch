@@ -23,6 +23,8 @@ import {
 test("real Pi loader, gh subprocess, session restore, live links, branch navigation and widget placement", async () => {
   const dir = await mkdtemp(join(tmpdir(), "pi-pr-watch-test-"));
   const path = process.env.PATH;
+  const originalIcons = process.env.PI_PR_WATCH_ICONS;
+  process.env.PI_PR_WATCH_ICONS = "unicode";
   let runner: ExtensionRunner | undefined;
   try {
     await mkdir(join(dir, "bin"));
@@ -42,6 +44,9 @@ test("real Pi loader, gh subprocess, session restore, live links, branch navigat
     );
     assert.deepEqual(loaded.errors, []);
     const session = SessionManager.create(cwd, join(dir, "sessions"));
+    loaded.runtime.appendEntry = (type, data) => {
+      session.appendCustomEntry(type, data);
+    };
     const first = session.appendMessage({
       role: "user",
       content: "看一下 https://github.com/o/first/pull/1",
@@ -61,6 +66,7 @@ test("real Pi loader, gh subprocess, session restore, live links, branch navigat
       new ModelRegistry(models),
     );
     let snapshot = "";
+    const notices: string[] = [];
     const placements: (string | undefined)[] = [];
     const errors: string[] = [];
     runner.onError((error) => errors.push(error.error));
@@ -69,6 +75,9 @@ test("real Pi loader, gh subprocess, session restore, live links, branch navigat
     runner.setUIContext(
       {
         ...runner.getUIContext(),
+        notify(message) {
+          notices.push(message);
+        },
         setWidget(_key, content, options) {
           if (content !== undefined) placements.push(options?.placement);
         },
@@ -86,6 +95,16 @@ test("real Pi loader, gh subprocess, session restore, live links, branch navigat
     await command.handler("", runner.createCommandContext());
     assert.match(snapshot, /o\/first#1/);
     assert.match(snapshot, /已批准/);
+    await command.handler("icons", runner.createCommandContext());
+    assert.match(notices.at(-1) ?? "", /unicode/);
+    await command.handler("icons nerd", runner.createCommandContext());
+    const saved = session.getLeafId();
+    await command.handler("icons invalid", runner.createCommandContext());
+    assert.equal(session.getLeafId(), saved);
+    assert.match(notices.at(-1) ?? "", /必须/);
+    await runner.emit({ type: "session_start", reason: "reload" });
+    await command.handler("icons", runner.createCommandContext());
+    assert.match(notices.at(-1) ?? "", /nerd/);
 
     const message: MessageEndEvent["message"] = {
       role: "toolResult",
@@ -114,6 +133,8 @@ test("real Pi loader, gh subprocess, session restore, live links, branch navigat
     await command.handler("", runner.createCommandContext());
     assert.match(snapshot, /o\/first#1/);
     assert.doesNotMatch(snapshot, /o\/second#2/);
+    await command.handler("icons", runner.createCommandContext());
+    assert.match(notices.at(-1) ?? "", /unicode/);
     assert.ok(placements.length > 0);
     assert.ok(placements.every((value) => value === "belowEditor"));
     assert.deepEqual(errors, []);
@@ -126,6 +147,8 @@ test("real Pi loader, gh subprocess, session restore, live links, branch navigat
     if (runner) await runner.emit({ type: "session_shutdown", reason: "quit" });
     if (path === undefined) delete process.env.PATH;
     else process.env.PATH = path;
+    if (originalIcons === undefined) delete process.env.PI_PR_WATCH_ICONS;
+    else process.env.PI_PR_WATCH_ICONS = originalIcons;
     await rm(dir, { recursive: true, force: true });
   }
 });

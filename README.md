@@ -7,8 +7,8 @@ Automatically finds PR URLs in the active session, queries their state through G
 ```text
 > …
 ─────────────────────────────────────────────────────
-owner/backend#123 · 开放 · CI ✓ · 待审核
-owner/frontend#45 · 已合并
+○ owner/backend#123 · 开放 · CI ✓ · 待审核
+◆ owner/frontend#45 · 已合并
 ```
 
 ## Install
@@ -42,15 +42,42 @@ pi -e git:github.com/Coiggahou2002/pi-pr-watch
 
 The widget uses its own key and coexists with [`pi-current-task`](https://github.com/Coiggahou2002/pi-current-task) and the standard Pi footer. Labels are currently Chinese. Long rows use terminal-column-aware truncation.
 
+## Icons and clickable PR links
+
+Every PR row begins with a state icon and retains its text label:
+
+| State  | Color  | Unicode default | Nerd Font glyph                             |
+| ------ | ------ | --------------- | ------------------------------------------- |
+| Open   | Green  | `○`             | Octicons `git-pull-request` (U+F407)        |
+| Merged | Purple | `◆`             | Octicons `git-merge` (U+F419)               |
+| Closed | Red    | `×`             | Octicons `git-pull-request-closed` (U+F4DC) |
+| Draft  | Gray   | `◌`             | Octicons `git-pull-request-draft` (U+F4DD)  |
+
+Colors have separate dark/light variants. CI failures and stale results retain their own warning text; they do not change an open PR's state icon into a closed one.
+
+```text
+/prs icons nerd     # GitHub-style icons; requires a Nerd Font in your terminal
+/prs icons unicode  # Compatible symbols, no special font needed
+/prs icons auto     # Default: compatible Unicode symbols, never guesses font support
+/prs icons          # Inspect the current setting
+```
+
+For Nerd mode, select a current **Nerd Font Mono** in your terminal's font settings. The codepoints come from [Nerd Fonts' Octicons mapping](https://github.com/ryanoasis/nerd-fonts/blob/master/glyphnames.json). If icons appear as boxes or occupy unexpected columns, switch to Unicode mode. Terminal protocols do not reliably disclose which glyphs your configured font contains.
+
+A command override is saved as a versioned custom entry in the current Pi session, survives reload/resume, and follows `/tree` branches. For a default across new sessions, launch Pi with `PI_PR_WATCH_ICONS=nerd pi` (or `unicode`/`auto`). A saved session preference takes precedence over the environment default. Invalid modes are reported, not silently accepted.
+
+**The icon and PR name are real OSC 8 hyperlinks**, including when a name is truncated. In Pi's fullscreen mode, a normal left click uses Pi's existing system-browser opener. In regular mode, your terminal handles the link and may require Cmd-click, Ctrl-click, or another configured gesture. Unsupported terminals may show plain text; `/prs` always exposes the full URL for copying. Hover alone never opens the browser. The link uses only the canonical GitHub PR URL—no query strings or arbitrary command targets.
+
 ## Commands
 
-| Command        | Action                                                                                                                        |
-| -------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `/prs`         | Open a full text snapshot with statuses, URLs, last successful update time, and errors. Edits to this snapshot are discarded. |
-| `/prs refresh` | Request a refresh now; simultaneous requests are coalesced.                                                                   |
-| `/prs hide`    | Hide the widget without stopping tracking or polling.                                                                         |
-| `/prs show`    | Show the widget.                                                                                                              |
-| `/prs help`    | Show command help.                                                                                                            |
+| Command                          | Action                                                                                                                        |
+| -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `/prs`                           | Open a full text snapshot with statuses, URLs, last successful update time, and errors. Edits to this snapshot are discarded. |
+| `/prs refresh`                   | Request a refresh now; simultaneous requests are coalesced.                                                                   |
+| `/prs hide`                      | Hide the widget without stopping tracking or polling.                                                                         |
+| `/prs show`                      | Show the widget.                                                                                                              |
+| `/prs icons auto\|nerd\|unicode` | Select and persist the session's icon mode.                                                                                   |
+| `/prs help`                      | Show command help.                                                                                                            |
 
 Visibility resets to shown on a new/resumed/reloaded session. Tracking is reconstructed from conversation history, not a separate database. Status caches are in memory and are queried again after restart. Old merged/closed PRs remain visible until they fall out of the 20-PR tracking limit.
 
@@ -80,9 +107,9 @@ npm test
 pi -e ./extensions/pr-watch/index.ts
 ```
 
-Strict TypeScript; tests cover URL discovery, untrusted CLI output validation, both GitHub check formats, query errors, concurrency, stale responses, tracking limits, terminal widths, and lifecycle integration through Pi's real loader and a fixture `gh` subprocess. CI runs Node.js 22 and 24.
+Strict TypeScript; tests cover URL discovery, untrusted CLI output validation, both GitHub check formats, query errors, concurrency, stale responses, tracking limits, all icon modes, terminal widths, hyperlink targets, and lifecycle integration through Pi's real loader and a fixture `gh` subprocess. CI runs Node.js 22 and 24.
 
-Real GitHub/TUI smoke-tested with open and merged public PRs, in fullscreen (100 columns) and regular (40 columns) modes, alongside `pi-current-task`, including hide/show behavior.
+Real GitHub/TUI smoke-tested with open and merged public PRs, in fullscreen (100 columns) and regular (40 columns) modes, alongside `pi-current-task`, including hide/show behavior. Icon mode switching and a fullscreen mouse click were also verified in a real Pi process with the platform browser launcher intercepted: it received the expected canonical GitHub URL without opening an actual browser window.
 
 This repository contains one plugin. Other personal plugins live in sibling repositories.
 

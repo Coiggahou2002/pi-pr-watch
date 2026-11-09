@@ -1,8 +1,11 @@
 import type { Theme } from "@earendil-works/pi-coding-agent";
 import {
   stripTerminalSequences,
+  hyperlink,
   truncateToWidth,
+  visibleWidth,
 } from "@earendil-works/pi-tui";
+import { iconGlyph, stateColor, visualState, type IconMode } from "./icons.ts";
 import type { PrRow } from "./watcher.ts";
 
 const MAX_WIDGET_ROWS = 3;
@@ -33,23 +36,26 @@ export function statusText(row: PrRow): string {
 export function renderPrs(
   rows: readonly PrRow[],
   width: number,
-  theme: Pick<Theme, "fg">,
+  theme: Pick<Theme, "fg" | "style" | "appearance">,
+  iconMode: IconMode = "auto",
 ): string[] {
   if (width <= 0) return [];
   const lines = rows.slice(0, MAX_WIDGET_ROWS).map((row) => {
+    const state = visualState(row);
+    const glyph = `${iconGlyph(state, iconMode)} `;
+    const icon = theme.style(glyph, {
+      fg: stateColor(state, theme.appearance),
+    });
     const label = truncateToWidth(
       row.pr.key,
-      Math.max(1, Math.floor(width * 0.45)),
+      Math.max(1, Math.floor(width * 0.45) - visibleWidth(glyph)),
       "…",
     );
     const color =
-      row.error || row.status?.checks === "failing"
-        ? "warning"
-        : row.status?.state === "MERGED"
-          ? "success"
-          : "muted";
+      row.error || row.status?.checks === "failing" ? "warning" : "muted";
     return truncateToWidth(
-      theme.fg("accent", label) + theme.fg(color, ` · ${statusText(row)}`),
+      hyperlink(icon + theme.fg("accent", label), row.pr.url) +
+        theme.fg(color, ` · ${statusText(row)}`),
       width,
       "…",
     );
